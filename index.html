@@ -104,6 +104,24 @@
         font-weight: 800;
       }
       button:disabled { cursor: wait; opacity: 0.55; }
+      .link-button {
+        min-height: auto;
+        justify-self: center;
+        padding: 0.25rem 0.5rem;
+        color: #9feabd;
+        background: transparent;
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-decoration: underline;
+        text-underline-offset: 0.2rem;
+      }
+      .link-button:hover { color: #c4ffd9; }
+      .hint {
+        margin: -0.25rem 0 0;
+        color: #9ca8a1;
+        font-size: 0.78rem;
+        line-height: 1.5;
+      }
       .card {
         margin-top: 1.5rem;
         padding: 1.1rem;
@@ -178,6 +196,14 @@
         <label>Correo<input id="email" type="email" autocomplete="email" required /></label>
         <label>Contraseña<input id="password" type="password" autocomplete="current-password" required /></label>
         <button id="sign-in" type="submit">Iniciar sesión</button>
+        <button id="forgot-password" type="button" class="link-button">Olvidé mi contraseña</button>
+      </form>
+
+      <form id="reset-password" hidden>
+        <label>Nueva contraseña<input id="new-password" type="password" autocomplete="new-password" minlength="12" required /></label>
+        <label>Confirmar contraseña<input id="confirm-password" type="password" autocomplete="new-password" minlength="12" required /></label>
+        <p class="hint">Usa al menos 12 caracteres. No reutilices la contraseña que apareció en la captura.</p>
+        <button id="save-password" type="submit">Guardar nueva contraseña</button>
       </form>
 
       <section id="consent" hidden>
@@ -202,13 +228,24 @@
       const supabase = createClient(
         "https://cpidxcgmfxfqrdnfftsk.supabase.co",
         "sb_publishable_aU4srB0kaLqKHZit3pS-Gg_43IyaI5k",
-        { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } },
+        { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } },
       );
-      const authorizationId = new URLSearchParams(window.location.search).get("authorization_id");
+      const PENDING_AUTHORIZATION_KEY = "gabofit.pending_authorization";
+      const PENDING_AUTHORIZATION_TTL_MS = 15 * 60 * 1000;
+      const urlParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.slice(1));
+      let authorizationId = urlParams.get("authorization_id") || readPendingAuthorization();
+      let recoveryMode =
+        urlParams.get("type") === "recovery" ||
+        hashParams.get("type") === "recovery" ||
+        urlParams.has("code");
       const status = document.querySelector("#status");
       const login = document.querySelector("#login");
+      const resetPassword = document.querySelector("#reset-password");
       const consent = document.querySelector("#consent");
       const signInButton = document.querySelector("#sign-in");
+      const forgotPasswordButton = document.querySelector("#forgot-password");
+      const savePasswordButton = document.querySelector("#save-password");
       const approve = document.querySelector("#approve");
       const deny = document.querySelector("#deny");
       const scopeLabels = {
@@ -217,18 +254,68 @@
         profile: "Leer la información básica de tu perfil",
       };
 
+      function readPendingAuthorization() {
+        try {
+          const pending = JSON.parse(localStorage.getItem(PENDING_AUTHORIZATION_KEY) || "null");
+          if (
+            !pending ||
+            typeof pending.id !== "string" ||
+            typeof pending.createdAt !== "number" ||
+            Date.now() - pending.createdAt > PENDING_AUTHORIZATION_TTL_MS
+          ) {
+            localStorage.removeItem(PENDING_AUTHORIZATION_KEY);
+            return null;
+          }
+          return pending.id;
+        } catch {
+          localStorage.removeItem(PENDING_AUTHORIZATION_KEY);
+          return null;
+        }
+      }
+
+      function rememberPendingAuthorization() {
+        if (!authorizationId) return;
+        localStorage.setItem(
+          PENDING_AUTHORIZATION_KEY,
+          JSON.stringify({ id: authorizationId, createdAt: Date.now() }),
+        );
+      }
+
+      function clearPendingAuthorization() {
+        localStorage.removeItem(PENDING_AUTHORIZATION_KEY);
+      }
+
       function showError(message) {
         status.textContent = message;
         status.classList.add("error");
       }
 
+      function showResetPassword() {
+        recoveryMode = true;
+        login.hidden = true;
+        consent.hidden = true;
+        resetPassword.hidden = false;
+        status.classList.remove("error");
+        status.textContent = "Escribe una contraseña nueva para tu cuenta de GaboFit.";
+      }
+
       async function loadConsent() {
         status.classList.remove("error");
+        const { data: sessionData } = await supabase.auth.getSession();
+
+        if (recoveryMode) {
+          if (sessionData.session) {
+            showResetPassword();
+          } else {
+            status.textContent = "Validando el enlace de recuperación…";
+          }
+          return;
+        }
+
         if (!authorizationId) {
           showError("Esta página se abre automáticamente al conectar GaboFit con ChatGPT.");
           return;
         }
-        const { data: sessionData } = await supabase.auth.getSession();
         if (!sessionData.session) {
           status.textContent = "Inicia sesión con tu cuenta personal de GaboFit.";
           login.hidden = false;
@@ -272,6 +359,76 @@
         await loadConsent();
       });
 
+      forgotPasswordButton.addEventListener("click", async () => {
+        const emailInput = document.querySelector("#email");
+        if (!emailInput.reportValidity()) return;
+
+        forgotPasswordButton.disabled = true;
+        signInButton.disabled = true;
+        status.classList.remove("error");
+        status.textContent = "Enviando el enlace de recuperación…";
+        rememberPendingAuthorization();
+
+        const redirectTo = `${window.location.origin}${window.location.pathname}`;
+        const { error } = await supabase.auth.resetPasswordForEmail(emailInput.value, {
+          redirectTo,
+        });
+
+        forgotPasswordButton.disabled = false;
+        signInButton.disabled = false;
+        if (error) {
+          showError(
+            error.status === 429
+              ? "Espera un minuto antes de solicitar otro correo."
+              : "No se pudo enviar el correo de recuperación. Intenta nuevamente.",
+          );
+          return;
+        }
+
+        status.textContent =
+          "Revisa tu correo y abre el enlace más reciente. También verifica la carpeta de spam.";
+      });
+
+      resetPassword.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const newPassword = document.querySelector("#new-password").value;
+        const confirmation = document.querySelector("#confirm-password").value;
+
+        if (newPassword !== confirmation) {
+          showError("Las contraseñas no coinciden.");
+          return;
+        }
+
+        savePasswordButton.disabled = true;
+        status.classList.remove("error");
+        status.textContent = "Guardando la contraseña nueva…";
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        savePasswordButton.disabled = false;
+
+        if (error) {
+          showError(
+            error.status === 422
+              ? "La contraseña no cumple los requisitos de seguridad."
+              : "El enlace venció o no se pudo actualizar la contraseña. Solicita uno nuevo.",
+          );
+          return;
+        }
+
+        recoveryMode = false;
+        resetPassword.reset();
+        resetPassword.hidden = true;
+        window.history.replaceState({}, document.title, window.location.pathname);
+        status.textContent = "Contraseña actualizada. Retomando la conexión con ChatGPT…";
+
+        authorizationId = authorizationId || readPendingAuthorization();
+        if (authorizationId) {
+          await loadConsent();
+        } else {
+          status.textContent =
+            "Contraseña actualizada. Regresa a ChatGPT y vuelve a conectar GaboFit.";
+        }
+      });
+
       async function decide(action) {
         approve.disabled = true;
         deny.disabled = true;
@@ -285,8 +442,15 @@
           showError(result.error?.message ?? "No se pudo completar la decisión.");
           return;
         }
+        clearPendingAuthorization();
         window.location.assign(result.data.redirect_url);
       }
+
+      supabase.auth.onAuthStateChange((event) => {
+        if (event === "PASSWORD_RECOVERY") {
+          window.setTimeout(showResetPassword, 0);
+        }
+      });
 
       approve.addEventListener("click", () => void decide("approve"));
       deny.addEventListener("click", () => void decide("deny"));
