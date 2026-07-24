@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>Autorizar GaboFit</title>
+    <style>
+      :root {
+        color: #f5f7f4;
+        background: #090c0a;
+        font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      * { box-sizing: border-box; }
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(circle at 10% 10%, rgba(116, 249, 173, 0.14), transparent 32rem),
+          radial-gradient(circle at 90% 80%, rgba(96, 130, 255, 0.09), transparent 30rem),
+          #090c0a;
+      }
+      main {
+        width: min(92vw, 36rem);
+        margin: 2rem auto;
+        padding: clamp(1.5rem, 5vw, 3rem);
+        border: 1px solid rgba(255, 255, 255, 0.11);
+        border-radius: 1.5rem;
+        background: rgba(15, 19, 17, 0.95);
+        box-shadow: 0 2rem 8rem rgba(0, 0, 0, 0.38);
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        font-weight: 800;
+      }
+      .mark {
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 0.7rem;
+        display: grid;
+        place-items: center;
+        color: #07150c;
+        background: #74f9ad;
+        font-size: 0.78rem;
+      }
+      .eyebrow {
+        margin: 3.5rem 0 0.8rem;
+        color: #74f9ad;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.16em;
+      }
+      h1 {
+        max-width: 12ch;
+        margin: 0 0 1rem;
+        font-size: clamp(2.4rem, 8vw, 4rem);
+        line-height: 0.98;
+        letter-spacing: -0.055em;
+      }
+      .lede { color: #b7c1bb; line-height: 1.65; }
+      .status {
+        margin-top: 1.5rem;
+        padding: 0.85rem 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.11);
+        border-radius: 0.85rem;
+        color: #bec8c2;
+        background: rgba(255, 255, 255, 0.035);
+      }
+      .status.error {
+        color: #ff9d9d;
+        border-color: rgba(255, 157, 157, 0.24);
+        background: rgba(255, 98, 98, 0.07);
+      }
+      form, label { display: grid; gap: 0.55rem; }
+      form { gap: 1rem; margin-top: 1.4rem; }
+      label { color: #dfe5e1; font-size: 0.86rem; font-weight: 700; }
+      input {
+        width: 100%;
+        border: 1px solid #364039;
+        border-radius: 0.8rem;
+        padding: 0.9rem 1rem;
+        color: inherit;
+        outline: none;
+        background: #0b0f0d;
+        font: inherit;
+      }
+      input:focus {
+        border-color: #74f9ad;
+        box-shadow: 0 0 0 3px rgba(116, 249, 173, 0.13);
+      }
+      button {
+        min-height: 3rem;
+        border: 0;
+        border-radius: 999px;
+        padding: 0.85rem 1.25rem;
+        cursor: pointer;
+        color: #07150c;
+        background: #74f9ad;
+        font: inherit;
+        font-weight: 800;
+      }
+      button:disabled { cursor: wait; opacity: 0.55; }
+      .card {
+        margin-top: 1.5rem;
+        padding: 1.1rem;
+        border: 1px solid rgba(255, 255, 255, 0.11);
+        border-radius: 1rem;
+        background: rgba(255, 255, 255, 0.025);
+      }
+      .client {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+      }
+      .client div { display: grid; gap: 0.35rem; }
+      .label {
+        color: #74f9ad;
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .verified {
+        border-radius: 999px;
+        padding: 0.4rem 0.65rem;
+        color: #74f9ad;
+        background: rgba(116, 249, 173, 0.1);
+        font-size: 0.7rem;
+        font-weight: 800;
+      }
+      ul {
+        margin: 1rem 0 0;
+        padding: 1rem 0 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.11);
+        display: grid;
+        gap: 0.6rem;
+        list-style: none;
+      }
+      li { display: flex; gap: 0.65rem; align-items: center; color: #d6ddd9; }
+      li::before {
+        content: "✓";
+        width: 1.35rem;
+        height: 1.35rem;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        color: #07150c;
+        background: #74f9ad;
+        font-size: 0.74rem;
+        font-weight: 900;
+      }
+      .privacy { margin: 1rem 0; color: #9ca8a1; font-size: 0.82rem; line-height: 1.55; }
+      .actions { display: flex; gap: 0.7rem; }
+      .actions button { flex: 1; }
+      .secondary { color: #f5f7f4; background: #272e2a; }
+      [hidden] { display: none !important; }
+      @media (max-width: 480px) {
+        main { margin: 0.5rem auto; border-radius: 1rem; }
+        .client, .actions { align-items: stretch; flex-direction: column; }
+        .verified { width: fit-content; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="brand"><span class="mark">GF</span><span>GaboFit</span></div>
+      <p class="eyebrow">CONEXIÓN SEGURA</p>
+      <h1>Tu entrenador, con tus datos y bajo tu control.</h1>
+      <p class="lede">Autoriza a ChatGPT para preparar tu rutina, darte un ejercicio a la vez y registrar tu progreso.</p>
+      <p id="status" class="status">Verificando la solicitud segura…</p>
+
+      <form id="login" hidden>
+        <label>Correo<input id="email" type="email" autocomplete="email" required /></label>
+        <label>Contraseña<input id="password" type="password" autocomplete="current-password" required /></label>
+        <button id="sign-in" type="submit">Iniciar sesión</button>
+      </form>
+
+      <section id="consent" hidden>
+        <div class="card">
+          <div class="client">
+            <div><span class="label">Aplicación</span><strong id="client-name">ChatGPT</strong></div>
+            <span class="verified">Solicitud verificada</span>
+          </div>
+          <ul id="scopes"></ul>
+        </div>
+        <p class="privacy">ChatGPT solo podrá operar con la información del usuario que inicia sesión. GaboFit no comparte contraseñas y Supabase mantiene separados los datos de cada usuario.</p>
+        <div class="actions">
+          <button id="approve" type="button">Autorizar conexión</button>
+          <button id="deny" type="button" class="secondary">Cancelar</button>
+        </div>
+      </section>
+    </main>
+
+    <script type="module">
+      import { createClient } from "https://esm.sh/@supabase/supabase-js@2.110.8?bundle";
+
+      const supabase = createClient(
+        "https://cpidxcgmfxfqrdnfftsk.supabase.co",
+        "sb_publishable_aU4srB0kaLqKHZit3pS-Gg_43IyaI5k",
+        { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } },
+      );
+      const authorizationId = new URLSearchParams(window.location.search).get("authorization_id");
+      const status = document.querySelector("#status");
+      const login = document.querySelector("#login");
+      const consent = document.querySelector("#consent");
+      const signInButton = document.querySelector("#sign-in");
+      const approve = document.querySelector("#approve");
+      const deny = document.querySelector("#deny");
+      const scopeLabels = {
+        openid: "Confirmar tu identidad",
+        email: "Conocer el correo de tu cuenta",
+        profile: "Leer la información básica de tu perfil",
+      };
+
+      function showError(message) {
+        status.textContent = message;
+        status.classList.add("error");
+      }
+
+      async function loadConsent() {
+        status.classList.remove("error");
+        if (!authorizationId) {
+          showError("Esta página se abre automáticamente al conectar GaboFit con ChatGPT.");
+          return;
+        }
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          status.textContent = "Inicia sesión con tu cuenta personal de GaboFit.";
+          login.hidden = false;
+          return;
+        }
+        login.hidden = true;
+        status.textContent = "Cargando los permisos solicitados…";
+        const { data, error } = await supabase.auth.oauth.getAuthorizationDetails(authorizationId);
+        if (error || !data) {
+          showError(error?.message ?? "No se pudo leer esta solicitud de autorización.");
+          return;
+        }
+        if ("redirect_url" in data) {
+          window.location.assign(data.redirect_url);
+          return;
+        }
+        document.querySelector("#client-name").textContent = data.client.name || "ChatGPT";
+        document.querySelector("#scopes").replaceChildren(
+          ...data.scope.split(/\s+/).filter(Boolean).map((scope) => {
+            const item = document.createElement("li");
+            item.textContent = scopeLabels[scope] ?? scope;
+            return item;
+          }),
+        );
+        status.textContent = `Sesión activa: ${data.user.email}`;
+        consent.hidden = false;
+      }
+
+      login.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        signInButton.disabled = true;
+        status.textContent = "Iniciando sesión…";
+        const email = document.querySelector("#email").value;
+        const password = document.querySelector("#password").value;
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        signInButton.disabled = false;
+        if (error) {
+          showError("Correo o contraseña incorrectos.");
+          return;
+        }
+        await loadConsent();
+      });
+
+      async function decide(action) {
+        approve.disabled = true;
+        deny.disabled = true;
+        status.textContent = action === "approve" ? "Conectando GaboFit…" : "Cancelando la conexión…";
+        const result = action === "approve"
+          ? await supabase.auth.oauth.approveAuthorization(authorizationId, { skipBrowserRedirect: true })
+          : await supabase.auth.oauth.denyAuthorization(authorizationId, { skipBrowserRedirect: true });
+        if (result.error || !result.data) {
+          approve.disabled = false;
+          deny.disabled = false;
+          showError(result.error?.message ?? "No se pudo completar la decisión.");
+          return;
+        }
+        window.location.assign(result.data.redirect_url);
+      }
+
+      approve.addEventListener("click", () => void decide("approve"));
+      deny.addEventListener("click", () => void decide("deny"));
+      void loadConsent();
+    </script>
+  </body>
+</html>
