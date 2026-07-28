@@ -290,6 +290,15 @@
         status.classList.add("error");
       }
 
+      async function showLogin() {
+        await supabase.auth.signOut({ scope: "local" });
+        consent.hidden = true;
+        resetPassword.hidden = true;
+        login.hidden = false;
+        status.classList.remove("error");
+        status.textContent = "Inicia sesión con tu cuenta personal de GaboFit.";
+      }
+
       function showResetPassword() {
         recoveryMode = true;
         login.hidden = true;
@@ -317,14 +326,24 @@
           return;
         }
         if (!sessionData.session) {
-          status.textContent = "Inicia sesión con tu cuenta personal de GaboFit.";
-          login.hidden = false;
+          await showLogin();
           return;
         }
+
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (userError || !userData.user) {
+          await showLogin();
+          return;
+        }
+
         login.hidden = true;
         status.textContent = "Cargando los permisos solicitados…";
         const { data, error } = await supabase.auth.oauth.getAuthorizationDetails(authorizationId);
         if (error || !data) {
+          if (error?.message?.toLowerCase().includes("auth session")) {
+            await showLogin();
+            return;
+          }
           showError(error?.message ?? "No se pudo leer esta solicitud de autorización.");
           return;
         }
